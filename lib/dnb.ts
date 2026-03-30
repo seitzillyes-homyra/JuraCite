@@ -305,6 +305,38 @@ export async function searchDNB(query: string): Promise<BookResult[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Google Books API — title lookup by ISBN (used as last-resort fallback)
+// ---------------------------------------------------------------------------
+
+async function lookupTitleViaGoogleBooks(isbn: string): Promise<string | null> {
+  const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`;
+  console.log(`[GoogleBooks] → URL: ${url}`);
+
+  try {
+    const response = await fetch(url, { next: { revalidate: 3600 } });
+    if (!response.ok) {
+      console.log(`[GoogleBooks] HTTP ${response.status}`);
+      return null;
+    }
+    const data = (await response.json()) as Record<string, unknown>;
+    const items = data?.items as unknown[] | undefined;
+    if (!items || items.length === 0) {
+      console.log(`[GoogleBooks] No items found for ISBN ${isbn}`);
+      return null;
+    }
+    const volumeInfo = (
+      (items[0] as Record<string, unknown>)?.volumeInfo as Record<string, unknown>
+    ) ?? {};
+    const title = volumeInfo?.title ? String(volumeInfo.title) : null;
+    console.log(`[GoogleBooks] Title for ${isbn}: ${title}`);
+    return title;
+  } catch (e) {
+    console.error("[GoogleBooks] Fetch failed:", e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // DNB SRU query — ISBN lookup (with fallback chain)
 // ---------------------------------------------------------------------------
 
@@ -326,6 +358,20 @@ export async function searchDNBByISBN(isbn: string): Promise<BookResult[]> {
       return results;
     }
     console.log(`[DNB ISBN] No results for query: ${cql} — trying next fallback`);
+  }
+
+  // Last resort: look up the title via Google Books and search DNB by title
+  console.log(`[DNB ISBN] All DNB queries failed — trying Google Books title lookup`);
+  const title = await lookupTitleViaGoogleBooks(clean);
+  if (title) {
+    console.log(`[DNB ISBN] Searching DNB by title: "${title}"`);
+    const results = await fetchDNBRecords(buildCQL(title), 10);
+    if (results.length > 0) {
+      console.log(`[DNB ISBN] Found ${results.length} result(s) via Google Books title fallback`);
+    } else {
+      console.log(`[DNB ISBN] No DNB results for title "${title}"`);
+    }
+    return results;
   }
 
   return [];
