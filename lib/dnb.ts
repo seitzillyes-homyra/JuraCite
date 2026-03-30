@@ -127,6 +127,8 @@ async function fetchDNBRecords(
     "&query=" +
     encodeURIComponent(cql);
 
+  console.log(`[DNB] → URL: ${url}`);
+
   const response = await fetch(url, {
     headers: { Accept: "application/xml" },
     next: { revalidate: 3600 },
@@ -139,7 +141,8 @@ async function fetchDNBRecords(
   const xmlText = await response.text();
 
   const countMatch = xmlText.match(/numberOfRecords>(\d+)/);
-  console.log(`[DNB] query="${cql}" → ${countMatch?.[1] ?? "?"} records`);
+  const count = countMatch?.[1] ?? "?";
+  console.log(`[DNB] query="${cql}" → ${count} records`);
 
   const parser = new XMLParser({
     ignoreAttributes: false,
@@ -302,10 +305,28 @@ export async function searchDNB(query: string): Promise<BookResult[]> {
 }
 
 // ---------------------------------------------------------------------------
-// DNB SRU query — ISBN lookup
+// DNB SRU query — ISBN lookup (with fallback chain)
 // ---------------------------------------------------------------------------
 
 export async function searchDNBByISBN(isbn: string): Promise<BookResult[]> {
+  // Strip everything except digits and X
   const clean = isbn.replace(/[^0-9X]/gi, "");
-  return fetchDNBRecords(`isbn=${clean}`, 5);
+
+  const queries = [
+    `num=${clean}`,
+    `isbn=${clean}`,
+    `idn=${clean}`,
+  ];
+
+  for (const cql of queries) {
+    console.log(`[DNB ISBN] Trying query: ${cql}`);
+    const results = await fetchDNBRecords(cql, 5);
+    if (results.length > 0) {
+      console.log(`[DNB ISBN] Found ${results.length} result(s) with query: ${cql}`);
+      return results;
+    }
+    console.log(`[DNB ISBN] No results for query: ${cql} — trying next fallback`);
+  }
+
+  return [];
 }
