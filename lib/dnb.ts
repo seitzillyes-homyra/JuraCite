@@ -62,16 +62,15 @@ function cleanString(s: string | null): string | null {
 }
 
 function extractShortTitle(title: string): string {
-  // Abbreviation in brackets: "Bürgerliches Gesetzbuch [BGB]" → "BGB"
-  const bracketMatch = title.match(/\[([A-ZÄÖÜ]{2,10})\]/);
-  if (bracketMatch) return bracketMatch[1];
-
-  // Abbreviation in parentheses: "... (StGB)" → "StGB"
-  const parenMatch = title.match(/\(([A-ZÄÖÜ]{2,10})\)/);
-  if (parenMatch) return parenMatch[1];
+  // Strip abbreviation suffixes — keep the full law name before them.
+  // "Strafgesetzbuch [StGB]" → "Strafgesetzbuch"
+  // "Strafgesetzbuch (StGB)" → "Strafgesetzbuch"
+  const stripped = title
+    .replace(/\s*\[[A-ZÄÖÜ]{2,10}\]/, "")
+    .replace(/\s*\([A-ZÄÖÜ]{2,10}\)/, "");
 
   // Strip common prefixes and subtitles
-  const cleaned = title
+  const cleaned = stripped
     .replace(/^Kommentar zum\s+/i, "")
     .replace(/^Kommentar zur\s+/i, "")
     .replace(/\s*:\s*.*$/, "")
@@ -231,6 +230,11 @@ async function fetchDNBRecords(
         const rawYear = getSubfield(pubField, "c");
         year = rawYear ? rawYear.replace(/\D/g, "") : null;
         if (year && year.length !== 4) year = null;
+        // Reject phantom future entries (e.g. "2050 · Petersberg Verlag")
+        if (year && parseInt(year) > new Date().getFullYear()) {
+          console.log(`[DNB] Skipping record with future year ${year} (id=${id})`);
+          continue;
+        }
       }
 
       // ---- Authors: 100 (main) + 700 (added entries) ----
@@ -302,6 +306,21 @@ function buildCQL(query: string): string {
 
 export async function searchDNB(query: string): Promise<BookResult[]> {
   return fetchDNBRecords(buildCQL(query));
+}
+
+// Title + author search used for edition comparison (more precise than free-text)
+export async function searchDNBByTitleAndAuthor(
+  title: string,
+  authorSurname: string
+): Promise<BookResult[]> {
+  const titleWords = title
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w.length >= 2);
+  const titleCQL = titleWords.map((w) => `tit=${w}`).join(" AND ");
+  const cql = authorSurname ? `${titleCQL} AND any=${authorSurname}` : titleCQL;
+  console.log(`[DNB title+author] CQL: ${cql}`);
+  return fetchDNBRecords(cql, 15);
 }
 
 // ---------------------------------------------------------------------------

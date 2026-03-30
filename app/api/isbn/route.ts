@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchDNBByISBN, searchDNB } from "@/lib/dnb";
+import { searchDNBByISBN, searchDNBByTitleAndAuthor } from "@/lib/dnb";
 import type { BookResult } from "@/lib/dnb";
 
 export interface IsbnLookupResult {
@@ -57,8 +57,14 @@ export async function GET(request: NextRequest) {
 
     const scannedBook = isbnResults[0];
 
-    // Step 2: Search by title to find all editions and determine the latest
-    const titleResults = await searchDNB(scannedBook.shortTitle);
+    // Step 2: Search by title + author to find all editions and determine the latest
+    const authorSurname = scannedBook.authors[0]?.split(",")[0].trim() ?? "";
+    console.log(`[ISBN route] Comparison search: title="${scannedBook.shortTitle}" author="${authorSurname}"`);
+    const titleResults = await searchDNBByTitleAndAuthor(scannedBook.shortTitle, authorSurname);
+    console.log(`[ISBN route] Title+author search returned ${titleResults.length} result(s):`);
+    titleResults.forEach((r, i) => {
+      console.log(`  [${i}] title="${r.title}" | year=${r.year} | publisher="${r.publisher}" | edition="${r.edition}" | editionNumber=${r.editionNumber}`);
+    });
     const latestEdition = titleResults[0] ?? null;
 
     const isLatest = determineIfLatest(scannedBook, latestEdition);
