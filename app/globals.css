@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #F2EDE0;
+    color: #1A1814;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .citation-box {
+    background-color: #FAF6EE;
+    border-left: 3px solid #9E6E1A;
+  }
+}
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fadeUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .hero-rule {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      #D4A83C 30%,
+      #D4A83C 70%,
+      transparent
+    );
+    height: 1px;
+  }
+
+  .scan-line {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #D4A83C, transparent);
+    animation: scanLine 2s ease-in-out infinite;
+    box-shadow: 0 0 8px 1px rgba(212, 168, 60, 0.5);
+  }
+
+  @keyframes scanLine {
+    0%   { top: 15%; }
+    50%  { top: 80%; }
+    100% { top: 15%; }
+  }
+}

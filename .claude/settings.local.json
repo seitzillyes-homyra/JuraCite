@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm audit:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s \"https://services.dnb.de/sru/dnb?version=1.1&operation=searchRetrieve&query=tit%3D%22Palandt%20BGB%22%20AND%20mat%3DA&recordSchema=MARC21-xml&maximumRecords=2\")",
+      "Bash(curl -s \"http://localhost:3000/api/search?q=Palandt+BGB\")",
+      "Bash(python3 -c \":*)"
+    ]
+  }
+}
