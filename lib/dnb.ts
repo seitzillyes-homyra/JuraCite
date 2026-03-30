@@ -54,9 +54,9 @@ function parseEditionNumber(edition: string | null): number | null {
 
 function cleanString(s: string | null): string | null {
   if (!s) return null;
-  // Remove MARC sort-indicator characters (&#152; &#156;) and trailing punctuation
+  // Remove trailing punctuation; MARC non-sort markers (U+0098/U+009C) are
+  // kept here and decoded to German quotation marks by decodeTitle() at render time.
   return s
-    .replace(/\u0098|\u009C/g, "")   // MARC non-sort markers
     .replace(/[,/;:]\s*$/, "")
     .trim();
 }

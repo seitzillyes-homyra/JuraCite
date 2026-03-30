@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { BookResult } from "@/lib/dnb";
+import { decodeTitle } from "@/lib/utils";
 
 interface Props {
   book: BookResult;
@@ -13,7 +14,7 @@ export default function ResultCard({ book, index = 0 }: Props) {
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(book.citationFormat);
+      await navigator.clipboard.writeText(decodeTitle(book.citationFormat));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -39,11 +40,11 @@ export default function ResultCard({ book, index = 0 }: Props) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <h2 className="font-display text-[22px] font-semibold text-ink-900 leading-snug">
-              {book.title}
+              {decodeTitle(book.title)}
             </h2>
             {book.subtitle && (
               <p className="font-sans text-sm text-ink-500 mt-0.5 leading-snug">
-                {book.subtitle}
+                {decodeTitle(book.subtitle)}
               </p>
             )}
           </div>
@@ -102,7 +103,7 @@ export default function ResultCard({ book, index = 0 }: Props) {
               Zitierformat
             </p>
             <p className="font-mono text-[13px] text-ink-800 break-words leading-relaxed">
-              {book.citationFormat}
+              {decodeTitle(book.citationFormat)}
             </p>
           </div>
           <button
